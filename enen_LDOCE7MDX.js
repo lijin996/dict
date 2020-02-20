@@ -1,5 +1,5 @@
 /* global api */
-class encn_LDOCE6NEWMDX {
+class encn_LDOCE7MDX {
     constructor(options) {
         this.options = options;
         this.maxexample = 6;
@@ -8,11 +8,11 @@ class encn_LDOCE6NEWMDX {
 
     async displayName() {
         let locale = await api.locale();
-        if (locale.indexOf('CN') != -1) 
-            return '朗文英汉6词典(mdx)';
-        if (locale.indexOf('TW') != -1) 
-            return '朗文英汉6词典(mdx)';
-        return 'enen_LDOCE6NEW(MDX)';
+        if (locale.indexOf('CN') != -1)
+            return '朗文英汉7词典(MDX)';
+        if (locale.indexOf('TW') != -1)
+            return '朗文英英7词典(MDX)';
+        return 'enen_LDOCE7(MDX)';
     }
 
 
@@ -24,12 +24,12 @@ class encn_LDOCE6NEWMDX {
     async findTerm(word) {
         this.word = word;
         // let deflection = await api.deinflect(word);
-        // let results = await Promise.all([this.findLDOCE6(word), this.findLDOCE6(deflection), this.findEC(word)]);
-        let results = await Promise.all([this.findLDOCE6(word)]);
+        // let results = await Promise.all([this.findLDOCE7(word), this.findLDOCE7(deflection), this.findEC(word)]);
+        let results = await Promise.all([this.findLDOCE7(word)]);
         return [].concat(...results).filter(x => x);
     }
 
-    async findLDOCE6(word) {
+    async findLDOCE7(word) {
         let notes = [];
         if (!word) return notes;
 
@@ -44,6 +44,13 @@ class encn_LDOCE6NEWMDX {
                 return node.innerText.trim();
         }
 
+        function THtml(node) {
+            if (!node)
+                return '';
+            else
+                return node.innerHTML.trim();
+        }
+
         function TAllHtml(nodes) {
             if (!nodes)
                 return '';
@@ -54,7 +61,7 @@ class encn_LDOCE6NEWMDX {
             }
             return value;
         }
-        
+
         let base = 'http://127.0.0.1:8000/';
         let url = base + encodeURIComponent(word);
         let doc = '';
@@ -66,22 +73,17 @@ class encn_LDOCE6NEWMDX {
             return [];
         }
 
-        let entries = doc.querySelectorAll('.entry');
-        let allentries = [];
+        let entries = doc.querySelectorAll('.dictentry');
         if (!entries) return notes;
+        let idx = 1;
         for (const entry of entries) {
-            allentries.push(entry);
-            let phrvbentries = entry.querySelectorAll('.phrvbentry');
-            allentries = allentries.concat(...phrvbentries);
-        }
-        for (const entry of allentries) {
             let definitions = [];
 
-            let header = entry.querySelector('.entryhead');
+            let header = entry.querySelector('.Head');
             //let tailer = entry.querySelector('.tail');
 
-            let expression = T(header.querySelector('.hwd')) || T(header.querySelector('.phrvbhwd')); //headword
-            let reading = T(header.querySelector('.pron')); // phonetic
+            let expression = T(header.querySelector('.hwd')); //headword
+            let reading = T(header.querySelector('.PronCodes > .pron')); // phonetic
 
             let audios = [];
             let audiolinks = header.querySelectorAll('a');
@@ -97,20 +99,32 @@ class encn_LDOCE6NEWMDX {
             for (const freq of freqs) {
                 extrainfo += `<span class="head_freq">${T(freq)}</span>`;
             }
+            let wfamily = doc.querySelectorAll('.LDOCE_word_family');
+            if (wfamily.length > 0) {
+              extrainfo += '<br/>' + wfamily[0].innerHTML;
+            }
 
-            let pos = T(header.querySelector('.pos')) ? `<span class='pos'>${T(header.querySelector('.pos'))}</span>` : '';
+            let pos = T(header.querySelector('.lm5pp_POS')) ? `<span class='lm5pp_POS'>${T(header.querySelector('.lm5pp_POS'))}</span>` : '';
 
-            let senses = entry.querySelectorAll('.sense');
+            //let PhrHead = entry.Entry.PhrVbEntry ? entry.Entry.PhrVbEntry[0].Head[0] : '';
+            //expression = PhrHead ? T(PhrHead.PHRVBHWD) : expression;
+            //pos = PhrHead ? `<span class='pos'>${T(PhrHead.POS)}</span>` : pos;
+            //let senses = entry.Entry.Sense || (PhrHead ? entry.Entry.PhrVbEntry[0].Sense : '');
+            let senses = entry.querySelectorAll('.Sense');
             for (const sense of senses) {
-                let signpost = T(sense.querySelector('.signpost')) || T(sense.querySelector('.lexunit'));
-                let sign = signpost ? `<div class="sign"><span class="eng_sign">${signpost}</span></div>` : '';
-                let subsenses = sense.querySelectorAll('.subsense');
+                let signpost = T(sense.querySelector('.signpost'));
+                let mergesense = T(sense.querySelector('.merge_sense'));
+                signpost = signpost ? signpost : mergesense;
+                let sign = signpost ? `<div class="sign"><span class="eng_sign"><span class="sensenum">${idx++}.</span> ${signpost}</span></div>` : '';
+
+                let subsenses = sense.querySelectorAll('.Subsense');
                 if (subsenses.length == 0)
                     subsenses = [sense];
                 for (const subsense of subsenses) {
-                    let subgram = T(subsense.querySelector('.gram'));
-                    let eng_tran = T(subsense.querySelector('.def')) ? `<span class='eng_tran'>${subgram}${T(subsense.querySelector('.def'))}</span>` : '';
+                    let eng_tran = TAllHtml(subsense.querySelectorAll('.DEF')) ? `<span class='eng_tran'>${TAllHtml(subsense.querySelectorAll('.DEF'))}</span>` : '';
                     if (!eng_tran) continue;
+                    var regex = /href="\/\w+"/gi;
+                    eng_tran = eng_tran.replace(regex, ' ');
                     let definition = '';
                     definition += `${sign}${pos}<span class="tran">${eng_tran}</span>`;
                     // make exmaple sentence segement
@@ -124,7 +138,7 @@ class encn_LDOCE6NEWMDX {
                             let soundlink = example.querySelector('a') || '';
                             if (soundlink && soundlink.getAttribute('href').indexOf('sound://') != -1)
                                 soundlink = putSoundTag(base + soundlink.getAttribute('href').substring(8)); // 8 = 'sound://'.length
-                            definition += `<li class='sent'>${soundlink}<span class='eng_sent'>${T(example)}</span></li>`;
+                            definition += `<li class='sent'>${soundlink}<span class='eng_sent'>${THtml(example)}</span></li>`;
                         }
                         definition += '</ul>';
                     }
@@ -133,7 +147,9 @@ class encn_LDOCE6NEWMDX {
                     let collos = subsense.querySelectorAll('.colloexa') || [];
                     let extras = [...grams, ...collos];
                     for (const extra of extras) {
-                        let eng_gram = T(extra.querySelector('.propformprep'));
+                        let eng_gramprep = T(extra.querySelector('.propformprep'));
+                        let eng_gram = T(extra.querySelector('.propform'));
+                        eng_gram = eng_gramprep + eng_gram;
                         let eng_collo = T(extra.querySelector('.collo'));
                         if (!eng_gram && !eng_collo) continue;
                         eng_gram = eng_gram ? `<span class="eng_gram_prep">${eng_gram}` : '';
@@ -148,7 +164,7 @@ class encn_LDOCE6NEWMDX {
                         if (soundlink && soundlink.getAttribute('href').indexOf('sound://') != -1)
                             soundlink = putSoundTag(base + soundlink.getAttribute('href').substring(8)); // 8 = 'sound://'.length
 
-                        let gram_collo_examp = `<span class="eng_gram_examp">${T(examp)}</span>`;
+                        let gram_collo_examp = `<span class="eng_gram_examp">${THtml(examp)}</span>`;
                         if (gram_collo_examp && this.maxexample > 0)
                             definition += `<ul class="gram_examps"><li class="gram_examp">${soundlink}${gram_collo_examp}</li></ul>`;
                     }
@@ -217,12 +233,14 @@ class encn_LDOCE6NEWMDX {
 
     renderCSS() {
         let css = `
-            <style>
-                span.head_gram{font-size: 0.8em;font-weight: bold;background-color: green;color: white;border-radius: 3px;margin: 0 3px;padding : 2px 3px;}
+            <style>                span.head_gram{font-size: 0.8em;font-weight: bold;background-color: green;color: white;border-radius: 3px;margin: 0 3px;padding : 2px 3px;}
                 span.head_freq{font-size: 0.8em;font-weight: bold;border: 1px solid red;border-radius:3px;color: red;margin: 0 3px;padding: 1px 2px;}
+                .lm5pp_POS{background: #CC9933 !important; color: #fff !important; font-size: 15px; padding: 0 5px 2px 1px !important; border-radius: 6px;}
+                span.cn_txt{color: OrangeRed !important;}
+                /* span.sensenum{color: orangered;} */
                 span.pos{text-transform: lowercase;font-size: 0.9em;margin-right: 5px;padding: 2px 4px;color: white;background-color: #0d47a1;border-radius: 3px;}
                 div.sign{font-weight: 0.9em;font-weight: bold;margin-bottom:3px;padding:0;}
-                span.eng_sign{margin-right: 3px;}
+                span.eng_sign{margin-right: 3px; background:#99CCFF !important;}
                 span.chn_sign{margin: 0;padding: 0;}
                 span.tran,
                 span.gram_extra{margin: 0;padding: 0;}
@@ -232,11 +250,12 @@ class encn_LDOCE6NEWMDX {
                 span.eng_gram_gloss{margin-right: 3px;padding: 0;}
                 span.eng_gram_form,
                 span.eng_gram_prep{font-weight: bold;display: block;}
+
                 span.eng_gram_gloss{font-style: italic;}
                 span.chn_tran,
                 span.chn_gram_tran{color: #0d47a1;}
                 ul.sents,
-                ul.gram_examps{font-size: 0.8em;list-style: none;margin: 3px 0;padding: 5px;background: rgba(13,71,161,0.1);border-radius: 3px;}
+                ul.gram_examps{font-size: 0.9em;list-style: none;margin: 3px 0;padding: 5px;background: rgba(13,71,161,0.1);border-radius: 3px;}
                 li.sent,
                 li.gram_examp{margin: 0;padding: 0;}
                 span.eng_sent,
@@ -247,3 +266,4 @@ class encn_LDOCE6NEWMDX {
         return css;
     }
 }
+     
