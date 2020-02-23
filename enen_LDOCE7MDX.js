@@ -1,5 +1,5 @@
 /* global api */
-class encn_LDOCE7MDX {
+class encn_LDOCE5MDX {
     constructor(options) {
         this.options = options;
         this.maxexample = 6;
@@ -9,10 +9,10 @@ class encn_LDOCE7MDX {
     async displayName() {
         let locale = await api.locale();
         if (locale.indexOf('CN') != -1)
-            return '朗文英汉7词典(MDX)';
+            return '朗文英汉5词典(MDX)';
         if (locale.indexOf('TW') != -1)
-            return '朗文英英7词典(MDX)';
-        return 'enen_LDOCE7(MDX)';
+            return '朗文英英5词典(MDX)';
+        return 'enen_LDOCE5(MDX)';
     }
 
 
@@ -24,12 +24,12 @@ class encn_LDOCE7MDX {
     async findTerm(word) {
         this.word = word;
         // let deflection = await api.deinflect(word);
-        // let results = await Promise.all([this.findLDOCE7(word), this.findLDOCE7(deflection), this.findEC(word)]);
-        let results = await Promise.all([this.findLDOCE7(word)]);
+        // let results = await Promise.all([this.findLDOCE5(word), this.findLDOCE5(deflection), this.findEC(word)]);
+        let results = await Promise.all([this.findLDOCE5(word)]);
         return [].concat(...results).filter(x => x);
     }
 
-    async findLDOCE7(word) {
+    async findLDOCE5(word) {
         let notes = [];
         if (!word) return notes;
 
@@ -233,7 +233,8 @@ class encn_LDOCE7MDX {
 
     renderCSS() {
         let css = `
-            <style>                span.head_gram{font-size: 0.8em;font-weight: bold;background-color: green;color: white;border-radius: 3px;margin: 0 3px;padding : 2px 3px;}
+            <style>
+                span.head_gram{font-size: 0.8em;font-weight: bold;background-color: green;color: white;border-radius: 3px;margin: 0 3px;padding : 2px 3px;}
                 span.head_freq{font-size: 0.8em;font-weight: bold;border: 1px solid red;border-radius:3px;color: red;margin: 0 3px;padding: 1px 2px;}
                 .lm5pp_POS{background: #CC9933 !important; color: #fff !important; font-size: 15px; padding: 0 5px 2px 1px !important; border-radius: 6px;}
                 span.cn_txt{color: OrangeRed !important;}
@@ -250,7 +251,6 @@ class encn_LDOCE7MDX {
                 span.eng_gram_gloss{margin-right: 3px;padding: 0;}
                 span.eng_gram_form,
                 span.eng_gram_prep{font-weight: bold;display: block;}
-
                 span.eng_gram_gloss{font-style: italic;}
                 span.chn_tran,
                 span.chn_gram_tran{color: #0d47a1;}
@@ -266,4 +266,3 @@ class encn_LDOCE7MDX {
         return css;
     }
 }
-     
