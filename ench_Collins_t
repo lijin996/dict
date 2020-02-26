@@ -30,7 +30,7 @@ class encn_Collins_t {
         const maxexample = this.maxexample;
         if (!word) return [];
 
-        let base = 'http://dict.youdao.com/w/';
+        let base = 'let base = 'http://127.0.0.1:8000/';
         let url = base + encodeURIComponent(word);
         let doc = '';
         try {
